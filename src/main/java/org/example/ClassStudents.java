@@ -1,8 +1,8 @@
 package org.example;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.Comparator;
 import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -11,38 +11,72 @@ public class ClassStudents {
 
     private ArrayList<Student> students = new ArrayList<>();
 
-    public String addStudent(String firstName, String lastName, Date dateOfBirth, String gender, long id) {
+    public String addStudent(String firstName, String lastName, LocalDate dateOfBirth, String gender, String id) {
 
-        Date min = new Date(1900, Calendar.JANUARY, 1);
-        int currentYear = new Date().getYear() + 1900;
-        Date min1 = new Date(currentYear - 18, Calendar.JANUARY, 1);
-        if (dateOfBirth.before(min) || dateOfBirth.after(min1)) {
-            return "Invalid year.";
+        LocalDate min1 = LocalDate.of(1900, 1, 1);
+        LocalDate currentYear = LocalDate.now();
+        LocalDate min2 = LocalDate.of(currentYear.getYear() - 18, 1, 1);
+        if (dateOfBirth.isBefore(min1) || dateOfBirth.isAfter(min2)) {
+            throw new IllegalArgumentException("Invalid year.");
         } else if (firstName.isEmpty() || lastName.isEmpty()) {
-            return "Invalid first or last name.";
+            throw new IllegalArgumentException("Invalid first or last name.");
         } else if (!(gender.toLowerCase(Locale.ROOT).equals("m") ||
                 gender.toLowerCase(Locale.ROOT).equals("f") ||
                 gender.toLowerCase(Locale.ROOT).equals("male") ||
                 gender.toLowerCase(Locale.ROOT).equals("female"))) {
-            return "Invalid gender.";
+            throw new IllegalArgumentException("Invalid gender.");
         }
-        try{
+        try {
             Student student = new Student(firstName, lastName, dateOfBirth, gender, id);
             students.add(student);
         } catch (Exception e) {
-            Logger logger = Logger.getLogger("ClassStudents.java");
-            logger.log(Level.SEVERE, "Error during Student creation", e);
+            throw new IllegalArgumentException("Error during Student creation");
         }
         return "ok";
     }
 
-    public String deleteById(int id){
-        for (Student s : students){
-            if (s.getId() == id){
+    public String deleteById(String id) {
+        if (!(id.matches("[0-9]+"))){
+            throw new IllegalArgumentException("Invalid id!");
+        }
+        String name = null;
+        for (Student s : students) {
+            if (s.getId().equals(id)) {
                 students.remove(s);
+                name = s.getFirstName() + ' ' + s.getLastName();
                 break;
             }
         }
-        return "ok";
+        if (name == null) {
+            throw new IllegalArgumentException("Invalid id!");
+        }
+        return "Successful delete of " + name;
+    }
+
+    public ArrayList<Student> retrieveByAge(int age) {
+        if (age < 1) {
+            throw new IllegalArgumentException("Invalid age!");
+        }
+        ArrayList<Student> studentsByAge = new ArrayList<>();
+        for (Student student : this.students) {
+            if (student.getAge() == age) {
+                studentsByAge.add(student);
+            }
+        }
+        return studentsByAge;
+    }
+
+    public ArrayList<Student> listStudents(String option) {
+        switch (option){
+            case "birth" :
+                this.students.sort(Comparator.comparing(Student::getDateOfBirth));
+                break;
+            case "name":
+                this.students.sort(Comparator.comparing(Student::getLastName));
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid list option!");
+        }
+        return students;
     }
 }
